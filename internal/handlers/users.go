@@ -18,7 +18,27 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(models.Users)
+	formattedUsers := make([]models.User, len(models.Users))
+	for i, user := range models.Users {
+		formattedUsers[i] = user
+		formattedUsers[i].CreatedAt = time.Time{}
+	}
+	type ResponseUser struct {
+		ID        int    `json:"id"`
+		Name      string `json:"name"`
+		Email     string `json:"email"`
+		CreatedAt string `json:"created_at"`
+	}
+	var resp []ResponseUser
+	for _, user := range models.Users {
+		resp = append(resp, ResponseUser{
+			ID:        user.ID,
+			Name:      user.Name,
+			Email:     user.Email,
+			CreatedAt: models.FormatDate(user.CreatedAt),
+		})
+	}
+	json.NewEncoder(w).Encode(resp)
 	log.Println("Usuários retornados com sucesso")
 }
 
@@ -31,7 +51,7 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	user.ID = len(models.Users) + 1
-	user.CreatedAt = time.Now()
+	user.CreatedAt = time.Now().In(models.Timezone)
 	models.Users = append(models.Users, user)
 	log.Println("Usuário criado com sucesso:", user)
 
