@@ -10,6 +10,13 @@ import (
 	"projetinho/internal/models"
 )
 
+type ResponseUser struct {
+	ID        int    `json:"id"`
+	Name      string `json:"name"`
+	Email     string `json:"email"`
+	CreatedAt string `json:"created_at"`
+}
+
 func GetUsers(w http.ResponseWriter, r *http.Request) {
 	log.Println("Buscando usuários")
 	idStr := r.URL.Query().Get("id")
@@ -23,12 +30,7 @@ func GetUsers(w http.ResponseWriter, r *http.Request) {
 		formattedUsers[i] = user
 		formattedUsers[i].CreatedAt = time.Time{}
 	}
-	type ResponseUser struct {
-		ID        int    `json:"id"`
-		Name      string `json:"name"`
-		Email     string `json:"email"`
-		CreatedAt string `json:"created_at"`
-	}
+
 	var resp []ResponseUser
 	for _, user := range models.Users {
 		resp = append(resp, ResponseUser{
@@ -57,17 +59,39 @@ func CreateUser(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(user)
+
+	respUser := ResponseUser{
+		ID:        user.ID,
+		Name:      user.Name,
+		Email:     user.Email,
+		CreatedAt: models.FormatDate(user.CreatedAt),
+	}
+	json.NewEncoder(w).Encode(respUser)
 }
 
 func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	log.Println("Buscando usuário por ID")
 	idStr := r.URL.Query().Get("id")
-	id, _ := strconv.Atoi(idStr)
+	if idStr == "" {
+		http.Error(w, "ID do usuário é obrigatório", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println("Erro ao converter ID:", err)
+		http.Error(w, "ID do usuário inválido", http.StatusBadRequest)
+		return
+	}
 	for _, user := range models.Users {
 		if user.ID == id {
 			w.Header().Set("Content-Type", "application/json")
-			json.NewEncoder(w).Encode(user)
+			respUser := ResponseUser{
+				ID:        user.ID,
+				Name:      user.Name,
+				Email:     user.Email,
+				CreatedAt: models.FormatDate(user.CreatedAt),
+			}
+			json.NewEncoder(w).Encode(respUser)
 			log.Println("Usuário retornado com sucesso:", user)
 			return
 		}
