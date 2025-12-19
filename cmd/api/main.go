@@ -13,6 +13,10 @@ func usersHandler(w http.ResponseWriter, r *http.Request) {
 		handlers.GetUsers(w, r)
 	case "POST":
 		handlers.CreateUser(w, r)
+	case "PUT":
+		handlers.UpdateUser(w, r)
+	case "DELETE":
+		handlers.DeleteUser(w, r)
 	default:
 		http.Error(w, "Método não permitido", http.StatusMethodNotAllowed)
 	}

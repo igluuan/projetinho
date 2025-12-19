@@ -98,3 +98,66 @@ func GetUserByID(w http.ResponseWriter, r *http.Request) {
 	}
 	http.NotFound(w, r)
 }
+
+func DeleteUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Deletando usuário")
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, "ID do usuário é obrigatório", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println("Erro ao converter ID:", err)
+		http.Error(w, "ID do usuário inválido", http.StatusBadRequest)
+		return
+	}
+	for i, user := range models.Users {
+		if user.ID == id {
+			models.Users = append(models.Users[:i], models.Users[i+1:]...)
+			w.WriteHeader(http.StatusNoContent)
+			log.Println("Usuário deletado com sucesso:", user)
+			return
+		}
+	}
+	http.NotFound(w, r)
+}
+
+func UpdateUser(w http.ResponseWriter, r *http.Request) {
+	log.Println("Atualizando usuário")
+	idStr := r.URL.Query().Get("id")
+	if idStr == "" {
+		http.Error(w, "ID do usuário é obrigatório", http.StatusBadRequest)
+		return
+	}
+	id, err := strconv.Atoi(idStr)
+	if err != nil {
+		log.Println("Erro ao converter ID:", err)
+		http.Error(w, "ID do usuário inválido", http.StatusBadRequest)
+		return
+	}
+	var user models.User
+	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
+		log.Println("Erro ao decodificar o corpo da requisição:", err)
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+	for i, u := range models.Users {
+		if u.ID == id {
+			models.Users[i] = user
+			models.Users[i].ID = id
+			models.Users[i].CreatedAt = u.CreatedAt
+			w.Header().Set("Content-Type", "application/json")
+			respUser := ResponseUser{
+				ID:        user.ID,
+				Name:      user.Name,
+				Email:     user.Email,
+				CreatedAt: models.FormatDate(user.CreatedAt),
+			}
+			json.NewEncoder(w).Encode(respUser)
+			log.Println("Usuário atualizado com sucesso:", user)
+			return
+		}
+	}
+	http.NotFound(w, r)
+}
